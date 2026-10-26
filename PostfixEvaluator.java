@@ -10,22 +10,28 @@ public class PostfixEvaluator {
      * @throws ArithmeticException for division by zero
      */
     public static int evaluate(String expression) {
+        if (expression == null || expression.trim().isEmpty()) {
+            throw new PostFixException("Expression must not be blank.");
+        }
+
         BoundedStackInterface<Integer> stack = new ArrayStack<>(100);
-        Scanner tokens = new Scanner(expression);
-        String a = tokens.next();
-        
-        String[] items = a.split( " ");
-        if(items[0].equals("/") || items[0].equals("+") || items[0].equals("*") || items[0].equals("-") || items[1].equals("/") || items[1].equals("+") || items[1].equals("*") || items[1].equals("-")){
+        String[] items = expression.trim().split("\\s+");
+        if(items.length < 3){
             throw new PostFixException("Malformed Equation");
         }
-        if(items.length < 3){
+        if(items[0].equals("/") || items[0].equals("+") || items[0].equals("*") || items[0].equals("-") || items[1].equals("/") || items[1].equals("+") || items[1].equals("*") || items[1].equals("-")){
             throw new PostFixException("Malformed Equation");
         }
         for(int i = 0; i < items.length; i++){
             String current = items[i];
                 if(!(current.equals("/") || current.equals("*") || current.equals("-") || current.equals("+"))){
-                    int num = Integer.parseInt(current);
-                    stack.push(num);
+                    try{
+                        int num = Integer.parseInt(current);
+                        stack.push(num);
+                    }
+                    catch(NumberFormatException e){
+                        throw new PostFixException("Invalid token: " + current);
+                    }
                 }
                 else{
                     try{
@@ -39,9 +45,18 @@ public class PostfixEvaluator {
                         else if(current.equals("-")){
                             stack.push(num1 - num2);
                         }
+                        else if(current.equals("/")){
+                            if(num2 == 0){
+                               throw new ArithmeticException("Division by zero");
+                            }
+                            stack.push(num1 / num2);
+                        }
+                        else if(current.equals("*")){
+                            stack.push(num1 * num2);
+                        }
                     }
                     catch(StackUnderflowException e){
-
+                        throw new PostFixException("Malformed postfix expression.");
                     }
             }
         }
@@ -57,7 +72,14 @@ public class PostfixEvaluator {
         //         Catch stack underflow/overflow or check before operations.
         // Close the Scanner when you are finished.
 
-        tokens.close();
-        throw new UnsupportedOperationException("TODO: implement postfix evaluation");
+        if (stack.isEmpty()) {
+            throw new PostFixException("Malformed postfix expression.");
+        }
+        int result = stack.top();
+        stack.pop();
+        if (!stack.isEmpty()) {
+            throw new PostFixException("Malformed postfix expression.");
+        }
+        return result;
     }
 }
